@@ -1,0 +1,247 @@
+#!/bin/bash
+# A utility script for working with your VirtualBox VMs.
+
+listvms() {
+  # Strip the quotes and extra junk from each row.
+  echo "$( vboxmanage list vms | perl -lne 'print $1 if(/"([^"]+)"/)' )"
+}
+
+
+# A function to get the first VM in our list of VMs (in case the user didn't
+# specify a VM -- maybe because they only have one).
+defaultvm() {
+  echo $(listvms | sed -n '1p')
+}
+
+
+usage() {
+  implied=$(defaultvm) || $(echo default)
+  echo "A utility script for working with VMs."
+  echo
+  echo "Commands"
+  echo "====================================================================="
+  echo "- plzvm start [name]"
+  echo "- plzvm stop [name]"
+  echo "- plzvm ssh [vm|user@vm]"
+  echo "- plzvm list vms"
+  echo "- plzvm list ports [vm]"
+  echo "- plzvm map <port1> to [vm:]<port2>"
+  echo "- plzvm unmap <vm|localhost>:<port>"
+  echo
+  echo
+  echo "Examples"
+  echo "====================================================================="
+  echo "Starting and stopping VMs:"
+  echo
+  echo "plzvm start"
+  echo "- Starts your \"$implied\" VM."
+  echo
+  echo "plzvm stop"
+  echo "- Stops your \"$implied\" VM."
+  echo
+  echo "plzvm start foo"
+  echo "- Starts the VM named \"foo\"."
+  echo
+  echo "plzvm stop foo"
+  echo "- Stops the VM named \"foo\"."
+  echo
+  echo "---------------------------------------------------------------------"
+  echo "Connecting to VMs:"
+  echo
+  echo "plzvm ssh"
+  echo "- Connects to your \"$implied\" VM as the user \"$USER\"."
+  echo
+  echo "plzvm ssh foo"
+  echo "- Connects to the VM named \"foo\" as the user \"$USER\"."
+  echo
+  echo "plzvm ssh alice@foo"
+  echo "- Connects to the VM named \"foo\" VM as the user \"alice\"."
+  echo
+  echo "---------------------------------------------------------------------"
+  echo "Listing VMs and mapped ports:"
+  echo
+  echo "plzvm list vms"
+  echo "- Lists your available VMs."
+  echo
+  echo "plzvm list ports"
+  echo "- Lists the mapped ports on all your VMs."
+  echo
+  echo "plzvm list ports foo"
+  echo "- Lists the mapped ports on the VM named \"foo\"."
+  echo
+  echo "---------------------------------------------------------------------"
+  echo "Mapping and unmapping ports:"
+  echo
+  echo "plzvm map 8080 to 80"
+  echo "- Maps your Mac's port 8080 to port 80 on your \"$implied\" VM."
+  echo
+  echo "plzvm unmap localhost:8080"
+  echo "- Unmaps your Mac's port 8080 from one of your VM's ports."
+  echo
+  echo "plzvm map 2525 to foo:25"
+  echo "- Maps your Mac's port 2525 to port 25 on the VM named \"foo\"."
+  echo
+  echo "plzvm unmap foo:25"
+  echo "- Unmaps one of your Mac's ports from port 25 on the VM named \"foo\"."
+  echo
+}
+
+
+# Get the name of the VM that the user is talking about. It's either the only
+# only argument to this function, or if that argument is omitted, then it's the
+# default VM.
+targetvm() {
+  if [[ $1 ]]; then echo $1; else echo $(defaultvm); fi
+}
+
+
+if [[ $1 = "start" ]]; then
+  vm=$(targetvm $2)
+  echo "Starting $vm"
+  vboxmanage startvm $vm --type headless
+  exit $?
+fi
+
+
+if [[ $1 = "stop" ]]; then
+  vm=$(targetvm $2)
+  echo "Stopping $vm"
+  vboxmanage controlvm $vm poweroff
+  exit $?
+fi
+
+
+if [[ $1 = "ssh" ]]; then
+
+  # If the second argument contains an "@" sign, then split it into user name
+  # and VM name. Otherwise, treat it as just the VM name.
+  if [[ $2 =~ \@ ]]; then
+    # Create an array of user and VM name.
+    uservm=(${2//\@/ })
+    user=${uservm[0]}
+    vm=${uservm[1]}
+    sshtarget="$user@localhost"
+  else
+    vm=$(targetvm $2)
+    sshtarget=localhost
+  fi
+
+  # Find the port that maps to the VM's port 22.
+  portnum=$(vboxmanage showvminfo $vm --machinereadable \
+    | perl -lne 'print $1 if(/,tcp,,(\d+),,22/)')
+
+  if [[ $portnum ]]; then
+    echo "ssh -p $portnum $sshtarget"
+    ssh -p $portnum $sshtarget
+    exit $?
+  else
+    exit 1
+  fi
+fi
+
+
+# For the "list" command, simply ask vboxmanage to list our VMs.
+if [[ $1 = "list" && $2 = "vms" ]]; then
+  listvms
+  exit 0
+fi
+
+
+if [[ $1 = "list" && $2 = "ports" ]]; then
+  if [[ $3 ]]; then
+    vms=( $3 )
+  else
+    vms=$(listvms)
+  fi
+
+  for vm in $vms; do
+
+    # If the user didn't specify a VM, then display a separator.
+    if ! [[ $3 ]]; then
+      # If this isn't the first VM, then add a blank line.
+      if ! [[ $vm = ${vms[0]} ]]; then echo; fi
+      echo "== $vm =="
+    fi
+
+    vboxmanage showvminfo $vm --machinereadable | perl -lne \
+      "print \"localhost:\$1 -> $vm:\$2\" if(/\"[^,]+,tcp,,(\d+),,(\d+)/)"
+  done
+
+  exit 0
+fi
+
+
+if [[ $1 = "map" && $3 = "to" ]]; then
+  localport=$2
+
+  # If last the argument contains a ":" character, then split it into the
+  # name of the VM and the port on the VM.
+  if [[ $4 =~ \: ]]; then
+    pair=(${4//\:/ })
+    vm=${pair[0]}
+    vmport=${pair[1]}
+  else
+    # Otherwise, treat the argument as the port number and use the default VM.
+    vm=$(defaultvm)
+    vmport=$4
+  fi
+
+  echo "Mapping port $localport on your Mac to port $vmport on your $vm VM."
+  vboxmanage modifyvm $vm --natpf1 "local$localport,tcp,,$localport,,$vmport"
+  exit $?
+fi
+
+
+# Require the second argument to contain a ":" character.
+if [[ $1 = "unmap" && $2 =~ \: ]]; then
+
+  # Split the second argument on the ":" character.
+  pair=(${2//\:/ })
+  target=${pair[0]}
+  port=${pair[1]}
+
+  # If the user specified "localhost", then look in all the VMs for a rule that
+  # uses that local port.
+  if [[ $target = "localhost" ]]; then
+    localport=$port
+
+    # Loop over all our VMs and stop if we find a rule that maps this port.
+    for vm in $(listvms); do
+      vmport=$(vboxmanage showvminfo $vm --machinereadable \
+        | perl -lne "print \$1 if(/,tcp,,$localport,,(\d+)/)")
+
+      # Break out of the loop if we found a rule.
+      if [[ $vmport ]]; then break; fi
+    done
+  else
+    # Otherwise, the user specified the name of a VM. So look at the VM's
+    # settings to find the rule that maps to that port.
+    vm=$target
+    vmport=$port
+    localport=$(vboxmanage showvminfo $vm --machinereadable \
+      | perl -lne "print \$1 if(/,tcp,,(\d+),,$port/)")
+  fi
+
+  # If we have the VM and the two ports, then get the rule's name.
+  if [[ $vm && $vmport && $localport ]]; then
+    rulename=$(vboxmanage showvminfo $vm --machinereadable \
+      | perl -lne "print \$1 if(/\"([^,]+),tcp,,$localport,,$vmport\"/)")
+  fi
+
+  # If we have a rule and a VM, then use "modifyvm" to delete the rule.
+  # Otherwise, exit with nonzero.
+  if [[ $rulename && $vm ]]; then
+    echo "Unmapping localhost:$localport -> $vm:$vmport"
+    vboxmanage modifyvm $vm --natpf1 delete $rulename
+    exit $?
+  else
+    exit 1
+  fi
+
+fi
+
+
+# If the user didn't provide a valid command, then print the usage message
+# and exit with an error.
+usage
+exit 1
