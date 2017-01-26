@@ -15,7 +15,6 @@ defaultvm() {
 
 
 usage() {
-  implied=$(defaultvm) || $(echo default)
   echo "A utility script for working with VMs."
   echo
   echo "Commands"
@@ -29,7 +28,14 @@ usage() {
   echo "- plzvm unmap <vm|localhost>:<port>"
   echo "- plzvm install"
   echo "- plzvm uninstall"
+  echo "- plzvm help"
   echo
+}
+
+
+if [[ $1 = "help" || $1 = "-help" || $1 = "--help" || $1 == "-h" ]]; then
+  implied=$(defaultvm) || $(echo default)
+  echo "$(usage)"
   echo
   echo "Examples"
   echo "====================================================================="
@@ -95,7 +101,8 @@ usage() {
   echo "plzvm unmap foo:25"
   echo "- Unmaps one of your Mac's ports from port 25 on the VM named \"foo\"."
   echo
-}
+  exit 0
+fi
 
 
 # Get the name of the VM that the user is talking about. It's either the only
@@ -269,4 +276,6 @@ fi
 # If the user didn't provide a valid command, then print the usage message
 # and exit with an error.
 usage
+echo "Use 'plzm help' to see more details about each command."
+echo
 exit 1

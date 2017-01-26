@@ -37,6 +37,7 @@ $ plzvm uninstall
 * plzvm list ports [vm]
 * plzvm map \<port1> to [vm:]\<port2>
 * plzvm unmap \<vm|localhost>:\<port>
+* plzvm help
 
 
 ## Examples
