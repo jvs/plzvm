@@ -74,4 +74,4 @@ $ plzvm uninstall
 
 ## License
 
-[MIT license](https://github.com/jvs/plzvm/blob/master/LICENSE) (c) 2017 jvs
+[MIT License](https://github.com/jvs/plzvm/blob/master/LICENSE) (c) 2017 jvs
