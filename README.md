@@ -6,6 +6,28 @@ A utility script for working with your VirtualBox VMs on your macOS machine.
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
 * [macOS](http://www.apple.com/macos/)
 
+
+## Installation
+
+Using curl:
+```
+$ curl https://raw.githubusercontent.com/jvs/plzvm/master/plzvm --output /usr/local/bin/plzvm
+$ chmod +x /usr/local/bin/plzvm
+```
+
+Or, using git:
+```
+$ git clone https://github.com/jvs/plzvm.git
+$ cd plzvm
+$ ./plzvm install
+```
+
+To uninstall:
+```
+$ plzvm uninstall
+```
+
+
 ## Commands
 
 * plzvm start [name]
@@ -47,4 +69,3 @@ A utility script for working with your VirtualBox VMs on your macOS machine.
 * `plzvm map 2525 to foo:25` - Maps your Mac's port 2525 to port 25 on the VM named "foo".
 * `plzvm unmap localhost:8080` - Unmaps your Mac's port 8080 from one of your VM's ports.
 * `plzvm unmap foo:25` - Unmaps one of your Mac's ports from port 25 on the VM named "foo".
-

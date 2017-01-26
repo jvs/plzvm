@@ -27,10 +27,21 @@ usage() {
   echo "- plzvm list ports [vm]"
   echo "- plzvm map <port1> to [vm:]<port2>"
   echo "- plzvm unmap <vm|localhost>:<port>"
+  echo "- plzvm install"
+  echo "- plzvm uninstall"
   echo
   echo
   echo "Examples"
   echo "====================================================================="
+  echo "Installing and uninstalling plzvm:"
+  echo
+  echo "plzvm install"
+  echo "- Copies plzvm to /usr/local/bin/"
+  echo
+  echo "plzvm uninstall"
+  echo "- Removes plzvm from /usr/local/bin/"
+  echo
+  echo "---------------------------------------------------------------------"
   echo "Starting and stopping VMs:"
   echo
   echo "plzvm start"
@@ -238,6 +249,20 @@ if [[ $1 = "unmap" && $2 =~ \: ]]; then
     exit 1
   fi
 
+fi
+
+
+if [[ $1 = "install" ]]; then
+  echo "Copying $(basename "$0") to /usr/local/bin/"
+  cp $0 /usr/local/bin/
+  exit $?
+fi
+
+
+if [[ $1 = "uninstall" ]]; then
+  echo "Removing /usr/local/bin/$(basename "$0")"
+  rm /usr/local/bin/$(basename "$0")
+  exit $?
 fi
 
 
