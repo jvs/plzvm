@@ -1,5 +1,5 @@
 #!/bin/bash
-# A utility script for working with your VirtualBox VMs.
+# A utility script for working with your VirtualBox VMs on your macOS machine.
 
 listvms() {
   # Strip the quotes and extra junk from each row.
