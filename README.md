@@ -1,5 +1,10 @@
 # plzvm
-A utility script for working with your VirtualBox VMs.
+A utility script for working with your VirtualBox VMs on your macOS machine.
+
+## Requirements
+
+* [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+* [macOS](http://www.apple.com/macos/)
 
 ## Commands
 
