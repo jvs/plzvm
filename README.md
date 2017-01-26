@@ -53,7 +53,7 @@ $ plzvm uninstall
 
 * `plzvm ssh` - Connects to your default VM as $USER.
 * `plzvm ssh foo` - Connects to the VM named "foo" as $USER.
-* `plzvm ssh alice@foo` - Connects to the VM named "foo" VM as the user "alice".
+* `plzvm ssh alice@foo` - Connects to the VM named "foo" as the user "alice".
 
 
 ### Listing VMs and mapped ports:
