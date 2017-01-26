@@ -70,3 +70,8 @@ $ plzvm uninstall
 * `plzvm map 2525 to foo:25` - Maps your Mac's port 2525 to port 25 on the VM named "foo".
 * `plzvm unmap localhost:8080` - Unmaps your Mac's port 8080 from one of your VM's ports.
 * `plzvm unmap foo:25` - Unmaps one of your Mac's ports from port 25 on the VM named "foo".
+
+
+## License
+
+[MIT license](https://github.com/jvs/plzvm/blob/master/LICENSE) (c) 2017 jvs
