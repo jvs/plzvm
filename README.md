@@ -1,5 +1,7 @@
 # plzvm
+
 A utility script for working with your VirtualBox VMs on your macOS machine.
+
 
 ## Requirements
 
@@ -15,7 +17,7 @@ $ curl https://raw.githubusercontent.com/jvs/plzvm/master/plzvm --output /usr/lo
 $ chmod +x /usr/local/bin/plzvm
 ```
 
-Or, using git:
+Or using git:
 ```
 $ git clone https://github.com/jvs/plzvm.git
 $ cd plzvm
@@ -48,6 +50,7 @@ $ plzvm uninstall
 * `plzvm stop` - Stops your default VM.
 * `plzvm start foo` - Starts the VM named "foo".
 * `plzvm stop foo` - Stops the VM named "foo".
+* `plzvm open` - Runs the VM in a GUI window.
 
 
 ### Connecting to VMs:

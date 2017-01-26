@@ -21,6 +21,7 @@ usage() {
   echo "====================================================================="
   echo "- plzvm start [name]"
   echo "- plzvm stop [name]"
+  echo "- plzvm open [name]"
   echo "- plzvm ssh [vm|user@vm]"
   echo "- plzvm list vms"
   echo "- plzvm list ports [vm]"
@@ -56,11 +57,17 @@ if [[ $1 = "help" || $1 = "-help" || $1 = "--help" || $1 == "-h" ]]; then
   echo "plzvm stop"
   echo "- Stops your \"$implied\" VM."
   echo
+  echo "plzvm open"
+  echo "- Opens your \"$implied\" VM in a GUI window."
+  echo
   echo "plzvm start foo"
   echo "- Starts the VM named \"foo\"."
   echo
   echo "plzvm stop foo"
   echo "- Stops the VM named \"foo\"."
+  echo
+  echo "plzvm open foo"
+  echo "- Opens the VM named \"foo\" in a GUI window."
   echo
   echo "---------------------------------------------------------------------"
   echo "Connecting to VMs:"
@@ -125,6 +132,14 @@ if [[ $1 = "stop" ]]; then
   vm=$(targetvm $2)
   echo "Stopping $vm"
   vboxmanage controlvm $vm poweroff
+  exit $?
+fi
+
+
+if [[ $1 = "open" ]]; then
+  vm=$(targetvm $2)
+  echo "Opening $vm"
+  vboxmanage startvm $vm
   exit $?
 fi
 
