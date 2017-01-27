@@ -35,6 +35,8 @@ $ plzvm uninstall
 
 ## Commands
 
+* plzvm create \<name> \<iso> [disksizeMB]
+* plzvm delete \<name>
 * plzvm start [name]
 * plzvm stop [name]
 * plzvm ssh [vm|user@vm]
@@ -42,6 +44,7 @@ $ plzvm uninstall
 * plzvm list ports [vm]
 * plzvm map \<port1> to [vm:]\<port2>
 * plzvm unmap \<vm|localhost>:\<port>
+* plzvm open [name]
 * plzvm help
 
 
