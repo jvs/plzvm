@@ -19,9 +19,11 @@ usage() {
   echo
   echo "Commands"
   echo "====================================================================="
+  echo "- plzvm create <name> <iso> [disksizeMB]"
+  echo "- plzvm delete <name>"
+  echo "- plzvm open [name]"
   echo "- plzvm start [name]"
   echo "- plzvm stop [name]"
-  echo "- plzvm open [name]"
   echo "- plzvm ssh [vm|user@vm]"
   echo "- plzvm list vms"
   echo "- plzvm list ports [vm]"
@@ -49,7 +51,19 @@ if [[ $1 = "help" || $1 = "-help" || $1 = "--help" || $1 == "-h" ]]; then
   echo "- Removes plzvm from /usr/local/bin/"
   echo
   echo "---------------------------------------------------------------------"
+  echo "Creating and deleting VMs:"
+  echo
+  echo "plzvm create foo ~/ubuntu-16.04.1-server-amd64.iso 32768"
+  echo "- Creates a new VM called \"foo\" using the iso file and disk size (in MB)"
+  echo
+  echo "plzvm delete foo"
+  echo "- Deletes the VM named \"foo\"."
+  echo
+  echo "---------------------------------------------------------------------"
   echo "Starting and stopping VMs:"
+  echo
+  echo "plzvm open"
+  echo "- Opens your \"$implied\" VM in a GUI window."
   echo
   echo "plzvm start"
   echo "- Starts your \"$implied\" VM."
@@ -57,17 +71,14 @@ if [[ $1 = "help" || $1 = "-help" || $1 = "--help" || $1 == "-h" ]]; then
   echo "plzvm stop"
   echo "- Stops your \"$implied\" VM."
   echo
-  echo "plzvm open"
-  echo "- Opens your \"$implied\" VM in a GUI window."
+  echo "plzvm open foo"
+  echo "- Opens the VM named \"foo\" in a GUI window."
   echo
   echo "plzvm start foo"
   echo "- Starts the VM named \"foo\"."
   echo
   echo "plzvm stop foo"
   echo "- Stops the VM named \"foo\"."
-  echo
-  echo "plzvm open foo"
-  echo "- Opens the VM named \"foo\" in a GUI window."
   echo
   echo "---------------------------------------------------------------------"
   echo "Connecting to VMs:"
@@ -288,9 +299,91 @@ if [[ $1 = "uninstall" ]]; then
 fi
 
 
+if [[ $1 = "delete" && $2 ]]; then
+  vboxmanage unregistervm $2 --delete
+  exit $?
+fi
+
+
+if [[ $1 = "create" && $2 && $3 ]]; then
+  vm=$2
+  iso=$3
+
+  if ! [[ -e $iso ]]; then
+    echo "Cannot find the ISO image at $iso"
+    exit 1
+  fi
+
+  # Fail the whole script if any of our commands fail.
+  set -e
+
+  # This set up is based on instructions by Lee Mendelowitz:
+  # https://leemendelowitz.github.io/blog/ubuntu-server-virtualbox.html
+
+  echo "Creating new VM named \"$vm\"."
+  vboxmanage createvm --name $vm --ostype Ubuntu_64 --register
+
+  # MUST: Require the user to specify where to put the VDI file.
+  echo "Creating new disk named \"$vm.vdi\"."
+  if [[ $4 ]]; then
+    vboxmanage createmedium disk --filename $vm.vdi --size $4
+  else
+    # MUST: Document what VirtualBox does when the size is omitted.
+    vboxmanage createmedium disk --filename $vm.vdi
+  fi
+
+  echo "Creating SATA Controller."
+  vboxmanage storagectl $vm --name "SATA Controller" --add sata --controller IntelAHCI
+
+  echo  "Attaching SATA Controller to $vm.vdi HDD."
+  vboxmanage storageattach $vm --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium $vm.vdi
+
+  echo "Creating IDE Controller"
+  vboxmanage storagectl $vm --name "IDE Controller" --add ide
+
+  echo "Attaching IDE Controller to $iso DVD."
+  vboxmanage storageattach $vm --storagectl "IDE Controller" --port 0 --device 0 --type dvddrive --medium $iso
+
+  echo "Enable I/O APIC (required for 64-bit guest operating systems)."
+  echo "Details: https://www.virtualbox.org/manual/ch03.html#settings-motherboard"
+  vboxmanage modifyvm $vm --ioapic on
+
+  echo "Start with 1 GB RAM and 128 MB video memory."
+  vboxmanage modifyvm $vm --memory 1024 --vram 128
+
+  echo "Use network address translation for network card #1."
+  vboxmanage modifyvm $vm --nic1 nat
+
+  # MAY: Allow the user to specify which port to use for ssh access.
+  echo "Map local port 2222 to the port 22 on the VM (for ssh access)."
+  vboxmanage modifyvm $vm --natpf1 "guestssh,tcp,,2222,,22"
+
+  echo "Make the NAT engine use the host's resolver mechanisms to handle DNS requests."
+  echo "Details: https://www.virtualbox.org/manual/ch09.html#nat-adv-dns"
+  vboxmanage modifyvm $vm --natdnshostresolver1 on
+
+  echo "Starting $vm"
+  echo
+  echo "Now use the interactive installation wizard to set up your server."
+  echo
+  echo "When you're done, log into the VM and install the ssh server:"
+  echo '$ sudo apt-get update'
+  echo '$ sudo apt-get install -y openssh-server'
+  echo "(These commands should be run in your new \"$vm\" VM.)"
+  echo
+  echo "Then close the VM window and \"Power off\" the machine."
+  echo
+  echo "Now from your mac, use the plzvm 'start' and 'stop' commands to start"
+  echo "and stop your VM. Use the plzvm 'ssh' command to ssh into your VM."
+  echo
+  vboxmanage startvm $vm
+  exit $?
+fi
+
+
 # If the user didn't provide a valid command, then print the usage message
 # and exit with an error.
 usage
-echo "Use 'plzm help' to see more details about each command."
+echo "Use 'plzvm help' to see more details about each command."
 echo
 exit 1

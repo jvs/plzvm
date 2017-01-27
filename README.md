@@ -1,11 +1,14 @@
 # plzvm
 
-A utility script for working with your VirtualBox VMs on your macOS machine.
+A utility script for working with your Ubuntu Server VMs on your macOS machine.
+
+The `plzvm create` command is based on the set up procedure [described by Lee Mendelowitz](https://leemendelowitz.github.io/blog/ubuntu-server-virtualbox.html).
 
 
 ## Requirements
 
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+* [Ubuntu Server ISO](https://www.ubuntu.com/download/server)
 * [macOS](http://www.apple.com/macos/)
 
 
