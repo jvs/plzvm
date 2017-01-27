@@ -2,7 +2,7 @@
 
 A utility script for working with your Ubuntu Server VMs on your macOS machine.
 
-The `plzvm create` command is based on the set up procedure [described by Lee Mendelowitz](https://leemendelowitz.github.io/blog/ubuntu-server-virtualbox.html).
+This tool is based on the set up procedure [described by Lee Mendelowitz](https://leemendelowitz.github.io/blog/ubuntu-server-virtualbox.html).
 
 
 ## Requirements
