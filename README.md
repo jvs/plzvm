@@ -10,24 +10,22 @@ You can use **plzvm** to create virtual machines, run them in "headless" mode,
 and ssh into them from the command line. This allows you to use your favorite
 terminal application on your Mac, and avoid the VirtualBox UI altogether.
 
-You can also use **plzvm** for port forwarding. For example:
+You can also use **plzvm** for port forwarding. For example, let's say you have
+a VM named DevServer, and it's running a web server on port 80:
 ```
 plzvm map 8888 to DevServer:80
 ```
-This command forwards port 8888 on your Mac to port 80 on your VM. So if you
-have a web server running on port 80 on your VM, you can view it in your Mac's
-web browser using `localhost:8888`. (Note: To use this command, instead of
-saying "DevServer", you'd use whatever you named your VM.)
+This command lets you use `localhost:8888` in your web browser to access the
+web site running on the VM. It maps your Mac's port 8888 to your VM's port 80.
 
 There are a few more helpful commands, which you can read about in this document.
-Additionally, the command `plzvm help` displays the usage information.
 
 
 ## Requirements
 
 * [macOS](http://www.apple.com/macos/)
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
-* An ISO file. Some places where you can get one:
+* An ISO file. Here are some places where you can get one:
   * [Ubuntu Server ISO](https://www.ubuntu.com/download/server)
   * [Fedora Server ISO](https://getfedora.org/en/server/download/)
   * [Debian Images](https://www.debian.org/distrib/netinst)
@@ -75,7 +73,7 @@ Here's the command to create a new VM:
 plzvm create <name>
                --iso <isopath> (required)
                [--ostype <ostype>] (optional)
-               [--saveto <directory>] (default: $PWD)
+               [--saveto <directory>] (default: current working directory)
                [--hdd <size>] (default: 32gb)
                [--ram <size>] (default: 1gb)
                [--vram <size>] (default: 128mb)
@@ -98,7 +96,7 @@ Arguments:
   + To see a list of supported OS types, run the command `vboxmanage list ostypes`.
   + This argument is optional.
 * `--saveto <directory>`
-  + This selects the directory where **plzvm** should save your VM's VDI file.
+  + This identifies the directory where **plzvm** should save your VM's VDI file.
   + For example, `--saveto ~/vms` would save the VDI file in your ~/vms directory.
   + The default location is the current working directory.
 * `--hdd <size>`
@@ -116,12 +114,15 @@ Arguments:
   + For example, `--vram 256mb`.
   + The default value is 128mb.
 * `--sshport <port>`
-  + This specifies the port your Mac should forward to port 22 on your VM.
+  + This specifies the local port that you can use to access port 22 on your VM.
   + For example, `--sshport 2222` would let you use `ssh -p 2222 localhost` to
     ssh into your VM.
-  + (Or you could simply use `plzvm ssh <name>` to ssh into the VM.)
+  + (Or you could simply use `plzvm ssh <name>` to ssh into the VM, since names
+    are often easier to remember than port numbers.)
   + If this argument is omitted, then **plzvm** does not create a forwarding
     rule for port 22.
+  + (Later, you can add rules using the `plzvm map` command, and remove them
+    with the `plzvm unmap` command.)
 
 
 ## Examples
