@@ -19,27 +19,27 @@ usage() {
   echo
   echo "Commands"
   echo "====================================================================="
-  echo "- plzvm create <name>"
-  echo "               --iso [isopath] (required)"
+  echo "plzvm create <name>"
+  echo "               --iso <isopath> (required)"
   echo "               [--ostype <ostype>] (optional)"
-  echo "               [--home <homepath>] (default: $HOME)"
+  echo "               [--saveto <directory>] (default: $PWD)"
   echo "               [--hdd <size>] (default: 32gb)"
   echo "               [--ram <size>] (default: 1gb)"
   echo "               [--vram <size>] (default: 128mb)"
   echo "               [--sshport <port>] (optional)"
   echo
-  echo "- plzvm delete <name>"
-  echo "- plzvm open [name]"
-  echo "- plzvm start [name]"
-  echo "- plzvm stop [name]"
-  echo "- plzvm ssh [vm|user@vm]"
-  echo "- plzvm list vms"
-  echo "- plzvm list ports [vm]"
-  echo "- plzvm map <port1> to [vm:]<port2>"
-  echo "- plzvm unmap <vm|localhost>:<port>"
-  echo "- plzvm install"
-  echo "- plzvm uninstall"
-  echo "- plzvm help"
+  echo "plzvm delete <name>"
+  echo "plzvm open [name]"
+  echo "plzvm start [name]"
+  echo "plzvm stop [name]"
+  echo "plzvm ssh [vm|user@vm]"
+  echo "plzvm list vms"
+  echo "plzvm list ports [vm]"
+  echo "plzvm map <port1> to [vm:]<port2>"
+  echo "plzvm unmap <vm|localhost>:<port>"
+  echo "plzvm install"
+  echo "plzvm uninstall"
+  echo "plzvm help"
   echo
 }
 
@@ -117,6 +117,9 @@ if [[ $1 = "help" || $1 = "-help" || $1 = "--help" || $1 == "-h" ]]; then
   echo
   echo "plzvm unmap foo:25"
   echo "- Unmaps one of your Mac's ports from port 25 on the VM named \"foo\"."
+  echo
+  echo
+  echo "Visit [ https://github.com/jvs/plzvm ] for the latest information on plzvm"
   echo
   exit 0
 fi
@@ -305,21 +308,28 @@ fi
 
 
 getsize() {
-  pad=$(perl -e "(uc \"$1\") =~ /(\\d+)(.*)/i; print \"\$1 \$2\"")
+  # Put a space in between the number and the units. In this case, just keep
+  # the first character of the units. (No need to be a stickler in this case.)
+  pad=$(perl -e "(uc \"$1\") =~ /(\\d+)(.)/i; print \"\$1 \$2\"")
+
+  # ASK: What's a better way to do this in bash? This doesn't look great.
   pair=($pad)
   num=${pair[0]}
   how=${pair[1]}
 
-  if [[ $how = "GB" ]]; then num="$(($num * 1024))"
+  if [[ $how = "T" ]]; then result="$(($num * 1024 * 1024))"
+  elif [[ $how = "G" ]]; then result="$(($num * 1024))"
+  elif [[ $how = "M" ]]; then result=num
+  elif [[ $how = "B" ]]; then result="$(($num / 1024))"
   fi
 
-  echo $num
+  echo $result
 }
 
 
 if [[ $1 = "create" && $2 ]]; then
   # Define default values.
-  homefolder=$HOME
+  vdifolder=$PWD
   hddsize=$(getsize 32gb)
   ramsize=$(getsize 1gb)
   vramsize=$(getsize 128mb)
@@ -330,7 +340,7 @@ if [[ $1 = "create" && $2 ]]; then
   while [ -n "$1" ]; do
     if [[ $1 = "--iso" ]]; then iso=$2
     elif [[ $1 = "--ostype" ]]; then ostype=$2
-    elif [[ $1 = "--home" ]]; then homefolder=$2
+    elif [[ $1 = "--saveto" ]]; then vdifolder=$2
     elif [[ $1 = "--hdd" ]]; then hddsize=$(getsize $2)
     elif [[ $1 = "--ram" ]]; then ramsize=$(getsize $2)
     elif [[ $1 = "--vram" ]]; then vramsize=$(getsize $2)
@@ -350,8 +360,25 @@ if [[ $1 = "create" && $2 ]]; then
     exit 1
   fi
 
-  if ! [[ -d $homefolder ]]; then
-    echo "Cannot find the directory '$homefolder'"
+  if ! [[ -d $vdifolder ]]; then
+    echo "Cannot find the directory '$vdifolder'"
+    exit 1
+  fi
+
+  sizefmt='<number><gb|mb>'
+
+  if ! [[ $hddsize ]]; then
+    echo "Invalid --hdd setting. Expected '--hdd $sizefmt'"
+    exit 1
+  fi
+
+  if ! [[ $ramsize ]]; then
+    echo "Invalid --ram setting. Expected '--ram $sizefmt'"
+    exit 1
+  fi
+
+  if ! [[ $vramsize ]]; then
+    echo "Invalid --vram setting. Expected '--vram $sizefmt'"
     exit 1
   fi
 
@@ -369,21 +396,34 @@ if [[ $1 = "create" && $2 ]]; then
     vboxmanage createvm --name $vm --register
   fi
 
-  vdi="$homefolder/$vm.vdi"
+  vdi="$vdifolder/$vm.vdi"
   echo "Creating new disk at \"$vdi\" with max size $hddsize MB."
   vboxmanage createmedium disk --filename $vdi --size $hddsize
 
   echo "Creating SATA Controller."
-  vboxmanage storagectl $vm --name "SATA Controller" --add sata --controller IntelAHCI
+  vboxmanage storagectl $vm \
+    --name "SATA Controller" \
+    --add sata \
+    --controller IntelAHCI
 
   echo  "Attaching SATA Controller to HDD: $vdi"
-  vboxmanage storageattach $vm --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium $vdi
+  vboxmanage storageattach $vm \
+    --storagectl "SATA Controller" \
+    --port 0 \
+    --device 0 \
+    --type hdd \
+    --medium $vdi
 
   echo "Creating IDE Controller"
   vboxmanage storagectl $vm --name "IDE Controller" --add ide
 
   echo "Attaching IDE Controller to DVD: $iso"
-  vboxmanage storageattach $vm --storagectl "IDE Controller" --port 0 --device 0 --type dvddrive --medium $iso
+  vboxmanage storageattach $vm \
+    --storagectl "IDE Controller" \
+    --port 0 \
+    --device 0 \
+    --type dvddrive \
+    --medium $iso
 
   echo "Enable I/O APIC (required for 64-bit guest operating systems)."
   echo "Details: https://www.virtualbox.org/manual/ch03.html#settings-motherboard"
@@ -409,8 +449,10 @@ if [[ $1 = "create" && $2 ]]; then
   echo "Now use the interactive installation wizard to set up your server."
   echo
   echo "When you're done, log into the VM and install the ssh server:"
+  echo
   echo '$ sudo apt-get update'
   echo '$ sudo apt-get install -y openssh-server'
+  echo
   echo "(These commands should be run in your new \"$vm\" VM.)"
   echo
   echo "Then close the VM window and \"Power off\" the machine."
