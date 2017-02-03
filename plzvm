@@ -319,7 +319,7 @@ getsize() {
 
   if [[ $how = "T" ]]; then result="$(($num * 1024 * 1024))"
   elif [[ $how = "G" ]]; then result="$(($num * 1024))"
-  elif [[ $how = "M" ]]; then result=num
+  elif [[ $how = "M" ]]; then result=$num
   elif [[ $how = "B" ]]; then result="$(($num / 1024))"
   fi
 
